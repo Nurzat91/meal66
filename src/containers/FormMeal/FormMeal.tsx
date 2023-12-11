@@ -23,6 +23,7 @@ const FormMeal = () => {
       setLoading(true);
       const responseData = await axiosApi.get('meal.json');
       setMealData(responseData.data);
+
     } catch (error) {
       console.error('Error fetching page content:', error);
     } finally {
@@ -32,10 +33,13 @@ const FormMeal = () => {
 
   const totalCal = useCallback(() => {
     if (mealData) {
+      let currentDate = new Date().toISOString().slice(0, 10);
       let total = 0;
       Object.keys(mealData).forEach((mealSelect) => {
         Object.keys(mealData[mealSelect]).forEach((id) => {
-          total += parseInt(mealData[mealSelect][id].kcal);
+          if (mealData[mealSelect][id].date === currentDate) {
+            total += parseInt(mealData[mealSelect][id].kcal);
+          }
         });
       });
       setTotalCalories(total);
@@ -49,9 +53,9 @@ const FormMeal = () => {
     void totalCal();
   }, [totalCal]);
 
-  const editPost = (id: string) => {
-    navigate(`/edit-meal/${id}`, {
-      state: { mealId: id },
+  const editPost = (mealSelect: string, id: string) => {
+    navigate(`/edit-meal/${mealSelect}/${id}`, {
+      state: { mealSelect, id },
     });
   };
 
@@ -59,7 +63,7 @@ const FormMeal = () => {
     try {
       await axiosApi.delete(`/meal/${mealSelect}/${id}.json`);
       await fetchGetData();
-      navigate('/');
+      totalCal();
     } catch (error) {
       console.error('Error:', error);
     }
@@ -85,14 +89,17 @@ const FormMeal = () => {
                   {Object.keys(mealData[mealSelect]).map((id: string) => (
                     <div className="d-flex justify-content-between align-items-center" key={id}>
                       <div className="d-flex w-75 justify-content-between">
-                        <p className="m-0">{mealData[mealSelect][id].description}</p>
+
+                        <p className="m-0">
+                          <strong>Date: </strong><span className="me-2">{mealData[mealSelect][id].date}</span>
+                          {mealData[mealSelect][id].description}</p>
                         <p className="m-0">
                           {mealData[mealSelect][id].kcal}<strong> kcal</strong>
                         </p>
                       </div>
                       <div>
                         <button className="m-3" type="button">
-                          <img src={btnEdit} alt="btn Edit" onClick={() => editPost(id)} />
+                          <img src={btnEdit} alt="btn Edit" onClick={() => editPost(mealSelect, id)} />
                         </button>
                         <button type="button">
                           <img

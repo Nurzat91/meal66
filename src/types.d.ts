@@ -1,5 +1,6 @@
 export interface Meal {
   id: string;
+  date: string;
   select: string;
   description: string;
   kcal: string;

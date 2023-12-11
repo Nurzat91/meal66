@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {useLocation, useNavigate, useParams} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import Spinner from '../../components/Spinner/Spinner';
 import axiosApi from '../../axiosApi';
 import {Meal} from '../../types';
@@ -7,12 +7,14 @@ import {Meal} from '../../types';
 const EditMeal = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const {id} = useParams();
   const location = useLocation();
-  const { mealId } = location.state || {};
+  const { mealSelect, id } = location.state || { mealSelect: '', id: '' };
+  let currentDate = new Date().toISOString().slice(0, 10);
+
   const [meal, setMeal] = useState<Meal>({
     id: Math.random().toString(),
-    select: '',
+    date: currentDate,
+    select: mealSelect,
     description: '',
     kcal: '',
   });
@@ -21,10 +23,9 @@ const EditMeal = () => {
     try {
       setLoading(true);
       if (id) {
-        const responseData = await axiosApi.get(`/meal/${id}.json`);
+        const responseData = await axiosApi.get(`/meal/${mealSelect}/${id}.json`);
         if (responseData.status === 200) {
           setMeal(responseData.data);
-          console.log('1', responseData.data);
         }
       }
 
@@ -33,7 +34,7 @@ const EditMeal = () => {
     }finally {
       setLoading(false);
     }
-  }, [mealId]);
+  }, [id, mealSelect]);
 
   useEffect(() => {
     void fetchPageContent();
@@ -52,10 +53,10 @@ const EditMeal = () => {
     try {
       setLoading(true);
       if (id) {
-        await axiosApi.put(`/meal/${id}.json`, meal);
+        await axiosApi.put(`/meal/${mealSelect}/${id}.json`, meal);
       } else {
-        const { select, description, kcal } = meal;
-        const dataToSend = { description, kcal };
+        const { select, date, description, kcal } = meal;
+        const dataToSend = {date , description, kcal };
         await axiosApi.post(`/meal/${select}.json`, dataToSend);
       }
       navigate('/');
@@ -86,6 +87,7 @@ const EditMeal = () => {
           <option value="Dinner">Dinner</option>
         </select>
       </div>
+      <div><strong>Date:</strong>{meal.date}</div>
       <div className="form-groupm-2 my-2">
         <textarea
           name="description" required
