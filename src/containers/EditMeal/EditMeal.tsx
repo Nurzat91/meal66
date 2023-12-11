@@ -1,5 +1,5 @@
-import React, { useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import React, {useCallback, useEffect, useState} from 'react';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 import Spinner from '../../components/Spinner/Spinner';
 import axiosApi from '../../axiosApi';
 import {Meal} from '../../types';
@@ -7,6 +7,9 @@ import {Meal} from '../../types';
 const EditMeal = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const {id} = useParams();
+  const location = useLocation();
+  const { mealId } = location.state || {};
   const [meal, setMeal] = useState<Meal>({
     id: Math.random().toString(),
     select: '',
@@ -14,24 +17,27 @@ const EditMeal = () => {
     kcal: '',
   });
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       if (meal.select) {
-  //         setLoading(true);
-  //         const responseData = await axiosApi.get(`/meal/${meal.select}.json`);
-  //
-  //         setMeal(responseData.data);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching page data:', error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //
-  //   void fetchData();
-  // }, [meal.select]);
+  const fetchPageContent = useCallback(async () => {
+    try {
+      setLoading(true);
+      if (id) {
+        const responseData = await axiosApi.get(`/meal/${id}.json`);
+        if (responseData.status === 200) {
+          setMeal(responseData.data);
+          console.log('1', responseData.data);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching page content:', error);
+    }finally {
+      setLoading(false);
+    }
+  }, [mealId]);
+
+  useEffect(() => {
+    void fetchPageContent();
+  }, [fetchPageContent]);
 
   const onChanged = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
@@ -45,9 +51,13 @@ const EditMeal = () => {
     event.preventDefault();
     try {
       setLoading(true);
-      const { select, description, kcal } = meal;
-      const dataToSend = { description, kcal };
-      await axiosApi.post(`/meal/${select}.json`, dataToSend);
+      if (id) {
+        await axiosApi.put(`/meal/${id}.json`, meal);
+      } else {
+        const { select, description, kcal } = meal;
+        const dataToSend = { description, kcal };
+        await axiosApi.post(`/meal/${select}.json`, dataToSend);
+      }
       navigate('/');
     } catch (error) {
       console.error('Error:', error);
@@ -58,7 +68,7 @@ const EditMeal = () => {
 
   let form = (
     <form className="border mt-4 p-3" onSubmit={onFormSubmit}>
-      <h4>Add</h4>
+      <h4>{id ? 'Edit meal' : 'Add'}</h4>
       <div className="form-group my-2">
         <h6>Select page</h6>
         <select
@@ -96,7 +106,7 @@ const EditMeal = () => {
         <label style={{fontSize: "20px"}} htmlFor="kcal">kcal</label>
       </div>
       <button disabled={loading} type="submit" className="btn btn-primary">
-        Save
+        {id ? 'UPDATE' : 'SAVE'}
       </button>
     </form>
   );
